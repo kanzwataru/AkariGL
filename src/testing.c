@@ -6,14 +6,18 @@ static SDL_Renderer *renderer;
 
 static SDL_Rect blah = {32, 64, 128, 256};
 
+static int panic_sdl(const char *err) {
+    fprintf(stderr, "%s: %s\n", err, SDL_GetError());
+    exit(-1);
+}
+
 int main(void)
 {
     int is_running = 1;
     SDL_Event event;
 
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "Could not initialize SDL2: %s\n", SDL_GetError());
-        return 1;
+        panic_sdl("Could not initialize SDL2");
     }
     
     window = SDL_CreateWindow("AkariGL Test", 
@@ -23,13 +27,12 @@ int main(void)
                               SDL_WINDOW_SHOWN);
     
     if(!window) {
-        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
-        return 1;
+        panic_sdl("Could not create window:");
     }
 
     renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if(!renderer) {
-        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
+        panic_sdl(stderr, "Could not create renderer:");
     }
     
     while(is_running) {
