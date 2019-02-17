@@ -7,10 +7,13 @@
 #define HEIGHT 600
 
 typedef struct {
-    GLuint  id;     /* vbo */
-    GLuint  config; /* vao */
+    GLuint  id;      /* vbo */
+    GLuint  config;  /* vao */
+    GLuint  ebo;     /* ebo */
     float  *vertices;
+    GLuint *elements;
     size_t  vert_num;
+    size_t  elem_num;
 } Mesh;
 
 static const char *vertex_shader = 
@@ -31,11 +34,19 @@ static SDL_Window    *window;
 static SDL_GLContext gl_context;
 
 static float tri_verts[] = {
-    -0.5f, -0.5f, 0.0f,
+    0.5f,   0.5f, 0.0f,
     0.5f,  -0.5f, 0.0f,
-    0.0f,   0.5f, 0.0f
+   -0.5f,  -0.5f, 0.0f,
+   -0.5f,   0.5f, 0.0f
 };
-static Mesh tri = {0, 0, &tri_verts[0], sizeof(tri_verts) / sizeof(float) / 3};
+
+static GLuint tri_elements[] = {
+    0, 1, 2,
+    0, 2, 3    
+};
+static Mesh tri = {0, 0, 0, &tri_verts[0], &tri_elements[0], 
+                    sizeof(tri_verts) / sizeof(float) / 3, 
+                    sizeof(tri_elements) / sizeof(GLuint)};
 static GLuint flat_shader;
 
 static int panic_sdl(const char *err) 
@@ -59,10 +70,14 @@ static void upload_mesh(Mesh *mesh)
 {
     glGenVertexArrays(1, &mesh->config);
     glGenBuffers(1, &mesh->id);
+    glGenBuffers(1, &mesh->ebo);
     
     glBindVertexArray(mesh->config);
     glBindBuffer(GL_ARRAY_BUFFER, mesh->id);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh->vert_num * 3, mesh->vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(float) * mesh->elem_num, mesh->elements, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
@@ -73,6 +88,7 @@ static void upload_mesh(Mesh *mesh)
 static void cleanup_mesh(Mesh *mesh)
 {
     glDeleteVertexArrays(1, &mesh->config);
+    glDeleteBuffers(1, &mesh->ebo);
     glDeleteBuffers(1, &mesh->id);
 
     check_gl_error();
@@ -82,7 +98,7 @@ static void render_mesh(Mesh *mesh, GLuint shader)
 {
     glUseProgram(shader);
     glBindVertexArray(mesh->config);
-    glDrawArrays(GL_TRIANGLES, 0, mesh->vert_num);
+    glDrawElements(GL_TRIANGLES, mesh->elem_num, GL_UNSIGNED_INT, 0);
 
     check_gl_error();
 }
@@ -205,6 +221,7 @@ int main(void)
         }
         
         glClear(GL_COLOR_BUFFER_BIT);
+//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         render_mesh(&tri, flat_shader);
 
         SDL_GL_SwapWindow(window);
