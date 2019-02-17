@@ -14,31 +14,28 @@ typedef struct {
 } Mesh;
 
 static const char *vertex_shader = 
-"#version 150 core\n"
-"in vec2 position;\n"
+"#version 330 core\n"
+"layout (location = 0) in vec3 position;\n"
 "void main() {\n"
-"   gl_Position = vec4(position, 0.0, 1.0);\n"
+"   gl_Position = vec4(position, 1.0);\n"
 "}";
 
 static const char *fragment_shader =
-"#version 150 core\n"
+"#version 330 core\n"
 "out vec4 out_color;\n"
 "void main() {\n"
-"   out_color = vec4(1.0, 0.5, 0.3, 1.0);\n"
+"   out_color = vec4(1.0f, 0.5f, 0.3f, 1.0f);\n"
 "}";
 
 static SDL_Window    *window;
-static SDL_Renderer  *renderer;
 static SDL_GLContext gl_context;
 
-static SDL_Rect blah = {32, 64, 128, 256};
-
 static float tri_verts[] = {
-    0.0f,  0.5f,
-    0.5f, -0.5f,
-   -0.5f, -0.5f
+    -0.5f, -0.5f, 0.0f,
+    0.5f,  -0.5f, 0.0f,
+    0.0f,   0.5f, 0.0f
 };
-static Mesh tri = {0, 0, tri_verts, sizeof(tri_verts) / sizeof(float)};
+static Mesh tri = {0, 0, &tri_verts[0], sizeof(tri_verts) / sizeof(float) / 3};
 static GLuint flat_shader;
 
 static int panic_sdl(const char *err) 
@@ -47,29 +44,47 @@ static int panic_sdl(const char *err)
     exit(-1);
 }
 
-static GLuint create_mesh_configuration(void) /* this could have different configuration types */
+#define check_gl_error()    _check_gl_error(__FILE__, __LINE__)
+static int _check_gl_error(const char *file, int line)
 {
-    GLuint vao;
+    GLenum err = 0;
+    while((err = glGetError()) != GL_NO_ERROR) {
+        fprintf(stderr, "%s:%d -> OpenGL Error: %04x\n", file, line, err);
+    }
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-
-    return vao;
+    return err == 0;
 }
 
 static void upload_mesh(Mesh *mesh) 
 {
+    glGenVertexArrays(1, &mesh->config);
     glGenBuffers(1, &mesh->id);
+    
+    glBindVertexArray(mesh->config);
     glBindBuffer(GL_ARRAY_BUFFER, mesh->id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh->vert_num, mesh->vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh->vert_num * 3, mesh->vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+ 
+    check_gl_error();
 }
 
 static void cleanup_mesh(Mesh *mesh)
 {
     glDeleteVertexArrays(1, &mesh->config);
     glDeleteBuffers(1, &mesh->id);
+
+    check_gl_error();
+}
+
+static void render_mesh(Mesh *mesh, GLuint shader)
+{
+    glUseProgram(shader);
+    glBindVertexArray(mesh->config);
+    glDrawArrays(GL_TRIANGLES, 0, mesh->vert_num);
+
+    check_gl_error();
 }
 
 static void check_shader_compilation(GLuint shader)
@@ -121,22 +136,16 @@ static GLuint compile_shader(const char *vert_src, const char *frag_src)
 
     glDeleteShader(vert);
     glDeleteShader(frag);
-}
 
-static void render_mesh(Mesh *mesh, GLuint shader)
-{
-    glBindVertexArray(mesh->config);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->id);
-    glUseProgram(shader);
-    glDrawArrays(GL_TRIANGLES, 0, mesh->vert_num);
-    printf("%d\n\n", glGetError());
+    check_gl_error();
+
+    return shader;
 }
 
 static void init_scene(void)
 {
     flat_shader = compile_shader(vertex_shader, fragment_shader);
 
-    tri.config = create_mesh_configuration();
     upload_mesh(&tri);
 }
 
@@ -160,7 +169,7 @@ int main(void)
     SDL_GL_LoadLibrary(NULL);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     window = SDL_CreateWindow("AkariGL Test", 
@@ -200,8 +209,9 @@ int main(void)
 
     cleanup();
 
-    SDL_GL_DeleteContext(window);
+    SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
+    SDL_Quit();
     
     return 1;
 }

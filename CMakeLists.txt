@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 project(AkariGL)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 file(GLOB_RECURSE SRCS src/*.c extern/*.c)
 file(GLOB_RECURSE HDRS src/*.h extern/*.h)
