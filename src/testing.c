@@ -171,6 +171,8 @@ int main(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+//    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+//    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
 
     window = SDL_CreateWindow("AkariGL Test", 
                               SDL_WINDOWPOS_UNDEFINED, 
@@ -189,6 +191,7 @@ int main(void)
     SDL_GL_SetSwapInterval(1); /* use v-sync */
 
     glViewport(0,0, WIDTH, HEIGHT);
+    glEnable(GL_MULTISAMPLE);
     glClearColor(0.2f, 0.3f, 0.3f, 0.0f);
 
     init_scene();
