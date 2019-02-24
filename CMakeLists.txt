@@ -8,11 +8,17 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 file(GLOB_RECURSE SRCS src/*.c extern/*.c)
 file(GLOB_RECURSE HDRS src/*.h extern/*.h)
 
-add_executable(${PROJECT_NAME} ${SRCS})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/extern {CMAKE_SOURCE_DIR}/extern/glad/include)
+# remove unneeded things from cglm
+list(FILTER SRCS EXCLUDE REGEX "extern\/.*dllmain.c$")
+list(FILTER SRCS EXCLUDE REGEX "extern\/.*test.*")
+list(FILTER HDRS EXCLUDE REGEX "extern\/.*test.*")
+# ##
 
-include_directories(extern/glad/include)
-target_link_libraries(${PROJECT_NAME} dl SDL2)
+add_executable(${PROJECT_NAME} ${SRCS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src {CMAKE_SOURCE_DIR}/extern/glad/include {CMAKE_SOURCE_DIR}/extern/cglm/include)
+
+include_directories(extern/glad/include extern/cglm/include)
+target_link_libraries(${PROJECT_NAME} dl SDL2 m)
 target_sources(${PROJECT_NAME} PRIVATE ${HDRS})
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
