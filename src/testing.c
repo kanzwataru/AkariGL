@@ -1,22 +1,9 @@
+#include "agl_platform.h"
 #include "agl_renderer.h"
 #include "agl_windowing.h"
 
 #define WIDTH  800
 #define HEIGHT 600
-
-static const char *vertex_shader =
-"#version 330 core\n"
-"layout (location = 0) in vec3 position;\n"
-"void main() {\n"
-"   gl_Position = vec4(position, 1.0);\n"
-"}";
-
-static const char *fragment_shader =
-"#version 330 core\n"
-"out vec4 out_color;\n"
-"void main() {\n"
-"   out_color = vec4(1.0f, 0.5f, 0.3f, 1.0f);\n"
-"}";
 
 static float quad_verts[] = {
     0.5f,   0.5f, 0.0f,
@@ -42,6 +29,9 @@ static MeshID   quad_id;
 
 int main(void)
 {
+    char *vertex_shader = agl_filesys_load("res/shaders/flat.vert", NULL);
+    char *fragment_shader = agl_filesys_load("res/shaders/flat.frag", NULL);
+    
     agl_window_init("AkariGL Testing", WIDTH, HEIGHT);
     agl_renderer_init(WIDTH, HEIGHT);
 
@@ -60,6 +50,9 @@ int main(void)
 
     agl_renderer_quit();
     agl_window_quit();
+    
+    free(vertex_shader);
+    free(fragment_shader);
 
     return 0;
 }

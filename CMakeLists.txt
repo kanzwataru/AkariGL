@@ -14,3 +14,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMA
 include_directories(extern/glad/include)
 target_link_libraries(${PROJECT_NAME} dl SDL2)
 target_sources(${PROJECT_NAME} PRIVATE ${HDRS})
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${PROJECT_NAME}>/res)
