@@ -1,7 +1,9 @@
 #include "agl_renderer.h"
+#include "agl_platform.h"
 #include "renderer/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 static void check_shader_compilation(GLuint shader)
 {
@@ -27,6 +29,21 @@ static void check_program_compilation(GLuint program)
         glGetProgramInfoLog(program, 512, NULL, msg_buf);
         fprintf(stderr, "*** PROGRAM COMPILATION FAILED ***\n, %s\n\n", msg_buf);
     }
+}
+
+ShaderID agl_load_compile_shader(const char *vert_path, const char *frag_path)
+{
+    char *vert_src = agl_filesys_load(vert_path, NULL);
+    assert(vert_src);
+
+    char *frag_src = agl_filesys_load(frag_path, NULL);
+    assert(frag_src);
+
+    ShaderID shader = agl_compile_shader(vert_src, frag_src);
+    free(vert_src);
+    free(frag_src);
+
+    return shader;
 }
 
 ShaderID agl_compile_shader(const char *vert_src, const char *frag_src)

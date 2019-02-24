@@ -29,14 +29,11 @@ static MeshID   quad_id;
 
 int main(void)
 {
-    char *vertex_shader = agl_filesys_load("res/shaders/flat.vert", NULL);
-    char *fragment_shader = agl_filesys_load("res/shaders/flat.frag", NULL);
-    
     agl_window_init("AkariGL Testing", WIDTH, HEIGHT);
     agl_renderer_init(WIDTH, HEIGHT);
 
     quad_id = agl_upload_new_mesh(&quad_data);
-    flat_shader = agl_compile_shader(vertex_shader, fragment_shader);
+    flat_shader = agl_load_compile_shader("res/shaders/flat.vert", "res/shaders/flat.frag");
 
     glClearColor(0.2f, 0.3f, 0.3f, 0.0f);
 
@@ -51,8 +48,5 @@ int main(void)
     agl_renderer_quit();
     agl_window_quit();
     
-    free(vertex_shader);
-    free(fragment_shader);
-
     return 0;
 }
