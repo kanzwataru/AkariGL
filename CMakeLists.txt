@@ -17,7 +17,7 @@ list(FILTER HDRS EXCLUDE REGEX "extern\/.*test.*")
 add_executable(${PROJECT_NAME} ${SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src {CMAKE_SOURCE_DIR}/extern/glad/include {CMAKE_SOURCE_DIR}/extern/cglm/include)
 
-include_directories(extern/glad/include extern/cglm/include)
+include_directories(extern/glad/include extern/cglm/include extern/stb)
 target_link_libraries(${PROJECT_NAME} dl SDL2 m)
 target_sources(${PROJECT_NAME} PRIVATE ${HDRS})
 

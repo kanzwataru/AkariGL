@@ -1,6 +1,4 @@
-#include "agl_platform.h"
-#include "agl_renderer.h"
-#include "agl_windowing.h"
+#include "agl.h"
 
 #define WIDTH  800
 #define HEIGHT 600
