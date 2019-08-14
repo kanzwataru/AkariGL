@@ -6,6 +6,7 @@
 #include "agl_windowing.h"
 
 #include "stb_image.h"
+#include "cglm/cglm.h"
 
 #include <stdlib.h>
 #include <stdbool.h>

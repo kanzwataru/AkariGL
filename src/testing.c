@@ -1,4 +1,6 @@
 #include "agl.h"
+#define DEBUG
+#include "renderer/debug.h"
 
 #define WIDTH  800
 #define HEIGHT 600
@@ -66,7 +68,7 @@ static struct MeshData quad_data = {
     sizeof(quad_elements) / sizeof(GLuint)
 };
 
-struct {
+static struct {
     GLuint vao;
     GLuint vbo;
 } cube_info;
@@ -80,9 +82,10 @@ void upload_cube(void)
     glGenBuffers(1, &cube_info.vbo);
 
     glBindVertexArray(cube_info.vao);
+
     glBindBuffer(GL_ARRAY_BUFFER, cube_info.vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
-    
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
@@ -95,8 +98,22 @@ int main(void)
     agl_window_init("AkariGL Testing", WIDTH, HEIGHT);
     agl_renderer_init(WIDTH, HEIGHT);
 
+    glEnable(GL_DEPTH_TEST);
+
     quad_id = agl_upload_new_mesh(&quad_data);
     flat_shader = agl_load_compile_shader("res/shaders/flat.vert", "res/shaders/flat.frag");
+
+    upload_cube();
+
+    mat4 proj;
+    glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f, proj);
+
+    mat4 model;
+    glm_mat4_identity(model);
+
+    mat4 view;
+    glm_mat4_identity(view);
+    glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
 
     glClearColor(0.2f, 0.3f, 0.3f, 0.0f);
 
@@ -105,6 +122,18 @@ int main(void)
 
         glUseProgram(flat_shader);
         glBindVertexArray(cube_info.vao);
+
+        glm_rotate_x(model, glm_rad(1.0f), model);
+        glm_rotate_y(model, glm_rad(0.5f), model);
+        glm_rotate_z(model, glm_rad(0.2f), model);
+
+        int model_loc = glGetUniformLocation(flat_shader, "model");
+        int view_loc = glGetUniformLocation(flat_shader, "view");
+        int proj_loc = glGetUniformLocation(flat_shader, "proj");
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, &model[0][0]);
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(proj_loc, 1, GL_FALSE, &proj[0][0]);
+
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         //agl_render_mesh(quad_id, &quad_data, flat_shader);
