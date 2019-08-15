@@ -7,6 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 file(GLOB_RECURSE SRCS src/*.c extern/*.c)
 file(GLOB_RECURSE HDRS src/*.h extern/*.h)
+file(GLOB_RECURSE RES res/*.frag res/*.vert)
 
 # remove unneeded things from cglm
 list(FILTER SRCS EXCLUDE REGEX "extern\/.*dllmain.c$")
@@ -19,8 +20,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src {CMAK
 
 include_directories(extern/glad/include extern/cglm/include extern/stb)
 target_link_libraries(${PROJECT_NAME} dl SDL2 m)
-target_sources(${PROJECT_NAME} PRIVATE ${HDRS})
+target_sources(${PROJECT_NAME} PRIVATE ${HDRS} ${RES})
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                   ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${PROJECT_NAME}>/res)
+set(res_outputs "")
+foreach(rfile ${RES})
+    file(RELATIVE_PATH fname ${CMAKE_SOURCE_DIR}/res/ ${rfile})
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/bin/res/${fname}
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/res/${fname}
+            ${CMAKE_BINARY_DIR}/bin/res/${fname}
+        DEPENDS ${CMAKE_SOURCE_DIR}/res/${fname})
+    list(APPEND res_outputs ${CMAKE_BINARY_DIR}/bin/res/${fname})
+endforeach()
+
+add_custom_target(
+    copy_res ALL
+    DEPENDS ${res_outputs}
+    COMMENT "Copying resource files"
+)
