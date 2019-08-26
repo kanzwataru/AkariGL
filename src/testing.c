@@ -113,9 +113,9 @@ int main(void)
 
     mat4 view;
     glm_mat4_identity(view);
-    glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
+    glm_translate(view, (vec3){0.0f, 0.0f, -4.0f});
 
-    vec3 light_dir = {0.5f, 0.2f, 0.1f};
+    vec3 light_dir = {-0.7f, 0.5f, 0.4f};
     glm_normalize(light_dir);
 
     glClearColor(0.2f, 0.3f, 0.3f, 0.0f);
@@ -123,6 +123,7 @@ int main(void)
     while(!agl_window_should_quit()) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // spinning cube
         glUseProgram(flat_shader);
         glBindVertexArray(cube_info.vao);
 
@@ -134,14 +135,26 @@ int main(void)
         int view_loc = glGetUniformLocation(flat_shader, "view");
         int proj_loc = glGetUniformLocation(flat_shader, "proj");
         int light_dir_loc = glGetUniformLocation(flat_shader, "light_dir");
+        int color_loc = glGetUniformLocation(flat_shader, "color");
         glUniformMatrix4fv(model_loc, 1, GL_FALSE, &model[0][0]);
         glUniformMatrix4fv(view_loc, 1, GL_FALSE, &view[0][0]);
         glUniformMatrix4fv(proj_loc, 1, GL_FALSE, &proj[0][0]);
         glUniform3fv(light_dir_loc, 1, &light_dir[0]);
+        glUniform3f(color_loc, 1.0f, 0.5f, 0.3f);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        //agl_render_mesh(quad_id, &quad_data, flat_shader);
+        // ground plane
+        mat4 ground_model;
+
+        glm_mat4_identity(ground_model);
+        glm_translate_y(ground_model, -1.5);
+        ground_model[0][0] *= 100;
+        ground_model[2][2] *= 100;
+
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, &ground_model[0][0]);
+        glUniform3f(color_loc, 0.9f, 0.7f, 0.8f);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         agl_window_swap_buffers();
     }
