@@ -7,7 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 file(GLOB_RECURSE SRCS src/*.c extern/*.c)
 file(GLOB_RECURSE HDRS src/*.h extern/*.h)
-file(GLOB_RECURSE RES res/*.frag res/*.vert)
+file(GLOB_RECURSE RES res/*.frag res/*.vert res/*.glsl)
 
 # remove unneeded things from cglm
 list(FILTER SRCS EXCLUDE REGEX "extern\/.*dllmain.c$")
