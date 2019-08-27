@@ -75,7 +75,10 @@ static struct {
 } cube_info;
 
 static ShaderID flat_shader;
+static ShaderID shad_shader;
 static MeshID   quad_id;
+static vec3 light_dir = {-0.7f, 0.5f, 0.4f};
+static unsigned int counter;
 
 void upload_cube(void)
 {
@@ -94,7 +97,7 @@ void upload_cube(void)
     glEnableVertexAttribArray(1);
 }
 
-void draw_scene(void)
+void draw_scene(ShaderID shader)
 {
     mat4 proj;
     glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f, proj);
@@ -103,18 +106,18 @@ void draw_scene(void)
     glm_mat4_identity(view);
     glm_translate(view, (vec3){0.0f, 0.0f, -4.0f});
 
-    vec3 light_dir = {-0.7f, 0.5f, 0.4f};
+    light_dir[0] = sinf((float)counter++ * 0.01f);
     glm_normalize(light_dir);
 
     // spinning cube
-    glUseProgram(flat_shader);
+    glUseProgram(shader);
     glBindVertexArray(cube_info.vao);
 
-    int model_loc = glGetUniformLocation(flat_shader, "model");
-    int view_loc = glGetUniformLocation(flat_shader, "view");
-    int proj_loc = glGetUniformLocation(flat_shader, "proj");
-    int light_dir_loc = glGetUniformLocation(flat_shader, "light_dir");
-    int color_loc = glGetUniformLocation(flat_shader, "color");
+    int model_loc = glGetUniformLocation(shader, "model");
+    int view_loc = glGetUniformLocation(shader, "view");
+    int proj_loc = glGetUniformLocation(shader, "proj");
+    int light_dir_loc = glGetUniformLocation(shader, "light_dir");
+    int color_loc = glGetUniformLocation(shader, "color");
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &cube_info.model[0][0]);
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, &proj[0][0]);
@@ -158,6 +161,7 @@ int main(void)
 
     quad_id = agl_upload_new_mesh(&quad_data);
     flat_shader = agl_load_compile_shader("res/shaders/flat.vert", "res/shaders/flat.frag");
+    shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.frag");
 
     upload_cube();
     glm_mat4_identity(cube_info.model);
@@ -173,7 +177,7 @@ int main(void)
         // *** render ***
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        draw_scene();
+        draw_scene(shad_shader);
 
         agl_window_swap_buffers();
     }

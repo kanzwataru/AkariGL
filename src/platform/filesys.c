@@ -56,8 +56,8 @@ char *agl_filesys_load(const char *path, size_t *size_out)
     return data;
 data_err:
     free(data);
-file_err:
     fclose(file);
+file_err:
     return NULL;
 }
 
