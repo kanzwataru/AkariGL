@@ -20,8 +20,8 @@ void agl_render_mesh(MeshID id, struct MeshData *data, ShaderID shader);
 /* */
 
 /* shader functions */
-ShaderID agl_compile_shader(const char *vert_src, const char *frag_src, const char *geom_src);
-ShaderID agl_load_compile_shader(const char *vert_path, const char *frag_path, const char *geom_path);
+ShaderID agl_compile_shader(const char *vert_src, const char *frag_src);
+ShaderID agl_load_compile_shader(const char *vert_path, const char *frag_path);
 /* */
 
 /* renderer functions */
