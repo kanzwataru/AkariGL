@@ -77,7 +77,7 @@ static struct {
 static ShaderID flat_shader;
 static ShaderID shad_shader;
 static MeshID   quad_id;
-static vec3 light_dir = {-0.7f, 0.5f, 0.4f};
+static vec3 light_dir = {0,0,0};
 static unsigned int counter;
 
 void upload_cube(void)
@@ -106,7 +106,9 @@ void draw_scene(ShaderID shader)
     glm_mat4_identity(view);
     glm_translate(view, (vec3){0.0f, 0.0f, -4.0f});
 
-    light_dir[0] = sinf((float)counter++ * 0.01f);
+    light_dir[0] = sinf((float)counter++ * 0.01f) * 0.8f;
+    light_dir[1] = 1;
+    light_dir[2] = 1;
     glm_normalize(light_dir);
 
     // spinning cube
@@ -158,10 +160,11 @@ int main(void)
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     quad_id = agl_upload_new_mesh(&quad_data);
-    flat_shader = agl_load_compile_shader("res/shaders/flat.vert", "res/shaders/flat.frag");
-    shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.frag");
+    flat_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/flat.frag");
+    shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
 
     upload_cube();
     glm_mat4_identity(cube_info.model);

@@ -2,6 +2,20 @@
 layout (location = 0) in vec3 in_position;
 layout (location = 1) in vec3 in_normal;
 
+out vec4 world_pos;
+out vec3 normal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
+void main() {
+    world_pos = model * vec4(in_position, 1.0);
+    gl_Position = proj * view * world_pos;
+    normal = mat3(transpose(inverse(model))) * in_normal;
+}
+
+/*
 out vec3 out_pos;
 out vec4 vert_col;
 
@@ -27,3 +41,4 @@ void main() {
         gl_Position = proj * view * world_pos;
     }
 };
+*/
