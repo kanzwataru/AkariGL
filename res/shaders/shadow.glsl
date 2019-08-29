@@ -11,6 +11,7 @@ uniform mat4 view;
 uniform mat4 proj;
 
 #define EXTRUDE_LENGTH 50
+//#define USE_VISUALIZATION
 
 void main()
 {
@@ -76,6 +77,7 @@ void main()
         EmitVertex();
         EndPrimitive();
     }
+#ifdef USE_VISUALIZATION
     else {
         // for visualization only
         vert_col = vec4(1.0, 1.0, 1.0, 1.0);
@@ -87,4 +89,5 @@ void main()
         EmitVertex();
         EndPrimitive();
     }
+#endif
 }

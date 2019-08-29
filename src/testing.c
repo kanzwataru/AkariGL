@@ -74,6 +74,7 @@ static struct {
     mat4 model;
 } cube_info;
 
+static ShaderID debug_shader;
 static ShaderID flat_shader;
 static ShaderID shad_shader;
 static MeshID   quad_id;
@@ -105,11 +106,6 @@ void draw_scene(ShaderID shader)
     mat4 view;
     glm_mat4_identity(view);
     glm_translate(view, (vec3){0.0f, 0.0f, -4.0f});
-
-    light_dir[0] = sinf((float)counter++ * 0.01f) * 0.8f;
-    light_dir[1] = 1;
-    light_dir[2] = 1;
-    glm_normalize(light_dir);
 
     // spinning cube
     glUseProgram(shader);
@@ -153,16 +149,33 @@ void draw_scene(ShaderID shader)
     glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
+void draw_fullscreen(void)
+{
+    ShaderID shader = debug_shader;
+
+    mat4 quad_model;
+    glm_mat4_identity(quad_model);
+    glm_scale(quad_model, (vec4){2, 2, 2, 2});
+
+    glUseProgram(shader);
+    glBindVertexArray(cube_info.vao);
+    int model_loc = glGetUniformLocation(shader, "model");
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &quad_model[0][0]);
+
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+}
+
 int main(void)
 {
     agl_window_init("AkariGL Testing", WIDTH, HEIGHT);
     agl_renderer_init(WIDTH, HEIGHT);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glEnable(GL_CULL_FACE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     quad_id = agl_upload_new_mesh(&quad_data);
+    debug_shader = agl_load_compile_shader("res/shaders/debug.vert", NULL, "res/shaders/debug.frag");
     flat_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/flat.frag");
     shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
 
@@ -177,10 +190,47 @@ int main(void)
         glm_rotate_y(cube_info.model, glm_rad(0.5f), cube_info.model);
         glm_rotate_z(cube_info.model, glm_rad(0.2f), cube_info.model);
 
+        light_dir[0] = sinf((float)counter++ * 0.01f) * 0.8f;
+        light_dir[1] = 1;
+        light_dir[2] = 1;
+        glm_normalize(light_dir);
+
         // *** render ***
+        glDepthMask(GL_TRUE);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+        //glCullFace(GL_BACK);
+        //draw_scene(shad_shader);
+
+        //draw_scene(shad_shader);
+        // depth prepass
+        glDrawBuffer(GL_NONE);
+        draw_scene(flat_shader);
+
+        // shadow volumes
+        glEnable(GL_STENCIL_TEST);
+        glDepthMask(GL_FALSE);
+        glEnable(GL_DEPTH_CLAMP);
+        glDisable(GL_CULL_FACE);
+
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
         draw_scene(shad_shader);
+
+        // lit render
+        glDisable(GL_DEPTH_CLAMP);
+        glEnable(GL_CULL_FACE);
+        glDrawBuffer(GL_BACK);
+
+        glStencilFunc(GL_EQUAL, 0x0, 0xFF);
+        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+        //glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_KEEP);
+        //draw_scene(flat_shader);
+        draw_fullscreen();
+
+        // shaded render
+        glDisable(GL_STENCIL_TEST);
 
         agl_window_swap_buffers();
     }
