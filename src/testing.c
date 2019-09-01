@@ -246,7 +246,6 @@ int main(void)
     shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
 
     load_obj("res/meshes/cube.obj", &cube_info.data, &cube_info.vert_count);
-    //cube_info.data = agl_filesys_obj_load("res/meshes/cube.obj", &cube_info.vert_count);
     assert(cube_info.data);
     upload_model(&cube_info);
     print_model(&cube_info);
