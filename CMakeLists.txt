@@ -7,20 +7,22 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 file(GLOB_RECURSE SRCS src/*.c extern/*.c)
 file(GLOB_RECURSE HDRS src/*.h extern/*.h)
-file(GLOB_RECURSE RES res/*.frag res/*.vert res/*.glsl)
+file(GLOB_RECURSE RES res/*)
 
 # remove unneeded things from cglm
 list(FILTER SRCS EXCLUDE REGEX "extern\/.*dllmain.c$")
 list(FILTER SRCS EXCLUDE REGEX "extern\/.*test.*")
 list(FILTER HDRS EXCLUDE REGEX "extern\/.*test.*")
+list(FILTER SRCS EXCLUDE REGEX "extern\/.*examples.*")
+list(FILTER HDRS EXCLUDE REGEX "extern\/.*examples.*")
 # ##
 
 add_executable(${PROJECT_NAME} ${SRCS})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src {CMAKE_SOURCE_DIR}/extern/glad/include {CMAKE_SOURCE_DIR}/extern/cglm/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src {CMAKE_SOURCE_DIR}/extern/glad/include {CMAKE_SOURCE_DIR}/extern/cglm/include {CMAKE_SOURCE_DIR}/extern/tinyobjloader-c)
 
-include_directories(extern/glad/include extern/cglm/include extern/stb)
+include_directories(extern/glad/include extern/cglm/include extern/stb extern/tinyobjloader-c)
 target_link_libraries(${PROJECT_NAME} dl SDL2 m)
-target_sources(${PROJECT_NAME} PRIVATE ${HDRS} ${RES})
+target_sources(${PROJECT_NAME} PRIVATE ${HDRS})
 
 set(res_outputs "")
 foreach(rfile ${RES})
