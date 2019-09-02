@@ -25,6 +25,7 @@ static const float screen_quad_verts[] = {
 };
 
 static struct Model cube_info;
+static struct Model suzanne_info;
 static struct Model screen_quad = {
     screen_quad_verts,
     6, 0, 0, {{0}}
@@ -32,8 +33,10 @@ static struct Model screen_quad = {
 
 static ShaderID debug_shader;
 static ShaderID flat_shader;
-static ShaderID shad_shader;
+static ShaderID lit_shader;
+static ShaderID shadvolume_shader;
 static vec3 light_dir = {0,0,0};
+static vec3 ambient_col = {0.1f, 0.05f, 0.15f};
 static unsigned int counter;
 
 float *load_obj(const char *path, size_t *out_vert_count)
@@ -99,6 +102,8 @@ void upload_model(struct Model *model)
 
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    glBindVertexArray(0);
 }
 
 void print_model(struct Model *model)
@@ -129,13 +134,15 @@ void draw_scene(ShaderID shader)
     int proj_loc = glGetUniformLocation(shader, "proj");
     int light_dir_loc = glGetUniformLocation(shader, "light_dir");
     int color_loc = glGetUniformLocation(shader, "color");
+    int ambient_loc = glGetUniformLocation(shader, "ambient");
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &cube_info.model[0][0]);
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, &proj[0][0]);
     glUniform3fv(light_dir_loc, 1, &light_dir[0]);
+    glUniform3fv(ambient_loc, 1, &ambient_col[0]);
     glUniform3f(color_loc, 1.0f, 0.5f, 0.3f);
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
 
     // small cube
     mat4 small_model;
@@ -146,22 +153,35 @@ void draw_scene(ShaderID shader)
 
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &small_model[0][0]);
     glUniform3f(color_loc, 0.5f, 0.35f, 0.45f);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
 
     // ground plane
-    if(shader == shad_shader)
-        return;
-    mat4 ground_model;
+    if(shader != shadvolume_shader) {
+        mat4 ground_model;
 
-    glm_mat4_identity(ground_model);
-    glm_translate_y(ground_model, -1.5);
-    ground_model[0][0] *= 100;
-    ground_model[2][2] *= 100;
+        glm_mat4_identity(ground_model);
+        glm_translate_y(ground_model, -1.5);
+        ground_model[0][0] *= 100;
+        ground_model[2][2] *= 100;
 
-    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &ground_model[0][0]);
-    glUniform3f(color_loc, 0.9f, 0.7f, 0.8f);
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, &ground_model[0][0]);
+        glUniform3f(color_loc, 0.9f, 0.7f, 0.8f);
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
+    }
+
+    // suzanne
+    mat4 suzanne_model;
+    glm_mat4_identity(suzanne_model);
+    glm_translate_x(suzanne_model, -1.5);
+    glm_translate_y(suzanne_model, -0.5);
+    glm_rotate_x(suzanne_model, glm_rad(-30), suzanne_model);
+    glm_scale(suzanne_model, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
+
+    glBindVertexArray(suzanne_info.vao);
+
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &suzanne_model[0][0]);
+    glDrawArrays(GL_TRIANGLES, 0, suzanne_info.vert_count);
 }
 
 void draw_fullscreen(void)
@@ -186,17 +206,20 @@ int main(void)
     agl_renderer_init(WIDTH, HEIGHT);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     //quad_id = agl_upload_new_mesh(&quad_data);
     debug_shader = agl_load_compile_shader("res/shaders/debug.vert", NULL, "res/shaders/debug.frag");
     flat_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/flat.frag");
-    shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
+    lit_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/lit.frag");
+    shadvolume_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
 
     cube_info.data = load_obj("res/meshes/cube.obj", &cube_info.vert_count);
+    suzanne_info.data = load_obj("res/meshes/suzanne.obj", &suzanne_info.vert_count);
     upload_model(&cube_info);
     upload_model(&screen_quad);
+    upload_model(&suzanne_info);
     //print_model(&cube_info);
     glm_mat4_identity(cube_info.model);
 
@@ -219,11 +242,13 @@ int main(void)
         // *** render ***
         glDepthMask(GL_TRUE);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
+#define DRAW_SHADOWED
+#ifndef DRAW_SHADOWED
         //draw_fullscreen();
         //draw_scene(flat_shader);
-        //draw_scene(shad_shader);
+        draw_scene(shadvolume_shader);
 
+#else
         // depth prepass
         glDrawBuffer(GL_NONE);
         glDepthFunc(GL_LESS);
@@ -239,25 +264,27 @@ int main(void)
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
         glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
         glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
-        draw_scene(shad_shader);
+        draw_scene(shadvolume_shader);
 
-        // lit render
+        // shaded render
         glDisable(GL_DEPTH_CLAMP);
         glEnable(GL_CULL_FACE);
         glDrawBuffer(GL_BACK);
+        glDisable(GL_STENCIL_TEST);
 
-        glStencilFunc(GL_EQUAL, 0x0, 0xFF);
+        glStencilFunc(GL_NOTEQUAL, 0x0, 0xFF);
         glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
         //glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_KEEP);
         draw_scene(flat_shader);
         //draw_fullscreen();
 
-        // shaded render
+        // lit render
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_EQUAL, 0x0, 0xFF);
+
+        draw_scene(lit_shader);
         glDisable(GL_STENCIL_TEST);
-        glStencilFunc(GL_NOTEQUAL, 0x0, 0xFF);
-
-        //draw_scene(flat_shader);
-
+#endif
         agl_window_swap_buffers();
     }
 

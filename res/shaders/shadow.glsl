@@ -1,6 +1,7 @@
 #version 330 core
 layout(triangles) in;
-layout(triangle_strip, max_vertices = 18) out;
+//layout(triangle_strip, max_vertices = 18) out;
+layout(triangle_strip, max_vertices = 64) out;
 
 in vec4 world_pos[];
 in vec3 normal[];
@@ -10,7 +11,7 @@ uniform vec3 light_dir;
 uniform mat4 view;
 uniform mat4 proj;
 
-#define EXTRUDE_LENGTH 30
+#define EXTRUDE_LENGTH 100
 //#define USE_VISUALIZATION
 
 void emit_quadface(vec4 top_a, vec4 top_b, vec3 btm_a, vec3 btm_b)
