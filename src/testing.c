@@ -26,6 +26,7 @@ static const float screen_quad_verts[] = {
 
 static struct Model cube_info;
 static struct Model suzanne_info;
+static struct Model sphere_info;
 static struct Model screen_quad = {
     screen_quad_verts,
     6, 0, 0, {{0}}
@@ -36,7 +37,7 @@ static ShaderID flat_shader;
 static ShaderID lit_shader;
 static ShaderID shadvolume_shader;
 static vec3 light_dir = {0,0,0};
-static vec3 ambient_col = {0.1f, 0.05f, 0.15f};
+static vec3 ambient_col = {0.05f, 0.025f, 0.1f};
 static unsigned int counter;
 
 float *load_obj(const char *path, size_t *out_vert_count)
@@ -176,6 +177,13 @@ void draw_scene(ShaderID shader)
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &suzanne_info.model[0][0]);
     glUniform3f(color_loc, 0.9f, 0.2f, 0.1f);
     glDrawArrays(GL_TRIANGLES, 0, suzanne_info.vert_count);
+
+    // sphere
+    glBindVertexArray(sphere_info.vao);
+
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &sphere_info.model[0][0]);
+    glUniform3f(color_loc, 0.1f, 0.2f, 0.9f);
+    glDrawArrays(GL_TRIANGLES, 0, sphere_info.vert_count);
 }
 
 void draw_fullscreen(void)
@@ -211,20 +219,23 @@ int main(void)
 
     cube_info.data = load_obj("res/meshes/cube.obj", &cube_info.vert_count);
     suzanne_info.data = load_obj("res/meshes/suzanne.obj", &suzanne_info.vert_count);
+    sphere_info.data = load_obj("res/meshes/sphere.obj", &sphere_info.vert_count);
     upload_model(&cube_info);
     upload_model(&screen_quad);
     upload_model(&suzanne_info);
+    upload_model(&sphere_info);
     //print_model(&cube_info);
     glm_mat4_identity(cube_info.model);
     glm_mat4_identity(suzanne_info.model);
+    glm_mat4_identity(sphere_info.model);
 
     glm_mat4_identity(suzanne_info.model);
-    glm_translate_x(suzanne_info.model, -1.8);
-    glm_translate_y(suzanne_info.model, -0.2);
+    glm_translate_x(suzanne_info.model, -1.8f);
+    glm_translate_y(suzanne_info.model, -0.2f);
     glm_rotate_x(suzanne_info.model, glm_rad(-30), suzanne_info.model);
     glm_scale(suzanne_info.model, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
 
-    glClearColor(0.25f, 0.25f, 0.4f, 0.0f);
+    glClearColor(0.15f, 0.15f, 0.3f, 0.0f);
 
     while(!agl_window_should_quit()) {
         // *** update ***
@@ -233,6 +244,11 @@ int main(void)
         glm_rotate_z(cube_info.model, glm_rad(0.2f), cube_info.model);
 
         glm_rotate_y(suzanne_info.model, glm_rad(-0.2f), suzanne_info.model);
+
+        glm_mat4_identity(sphere_info.model);
+        glm_translate_y(sphere_info.model, sinf((float)counter++ * 0.01f) * 0.5f);
+        glm_translate_x(sphere_info.model, 1.5f);
+        glm_scale(sphere_info.model, (vec4){0.4f, 0.4f, 0.4f, 1.0f});
 
         light_dir[0] = sinf((float)counter++ * 0.01f) * 0.8f;
         light_dir[1] = 1;
