@@ -7,71 +7,6 @@
 #define WIDTH  800
 #define HEIGHT 600
 
-/*
-static float quad_verts[] = {
-    0.5f,   0.5f, 0.0f,
-    0.5f,  -0.5f, 0.0f,
-   -0.5f,  -0.5f, 0.0f,
-   -0.5f,   0.5f, 0.0f
-};
-
-static GLuint quad_elements[] = {
-    0, 1, 2,
-    0, 2, 3
-};
-
-static float cube_vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-};
-
-static struct MeshData quad_data = {
-    quad_verts,
-    quad_elements,
-    sizeof(quad_verts) / sizeof(float) / 3,
-    sizeof(quad_elements) / sizeof(GLuint)
-};
-*/
-
 struct Model {
     float *data;
     size_t vert_count;
@@ -80,16 +15,28 @@ struct Model {
     mat4 model;
 };
 
+static const float screen_quad_verts[] = {
+    -1, -1, 0,    0, 0, 1,    0, 1,
+     1, -1, 0,    0, 0, 1,    1, 1,
+    -1,  1, 0,    0, 0, 1,    0, 0,
+     1, -1, 0,    0, 0, 1,    1, 1,
+     1,  1, 0,    0, 0, 1,    1, 0,
+    -1,  1, 0,    0, 0, 1,    0, 0
+};
+
 static struct Model cube_info;
+static struct Model screen_quad = {
+    screen_quad_verts,
+    6, 0, 0, {{0}}
+};
 
 static ShaderID debug_shader;
 static ShaderID flat_shader;
 static ShaderID shad_shader;
-static MeshID   quad_id;
 static vec3 light_dir = {0,0,0};
 static unsigned int counter;
 
-void load_obj(const char *path, float **data, size_t *out_vert_count)
+float *load_obj(const char *path, size_t *out_vert_count)
 {
     char *obj_file;
     size_t obj_file_size;
@@ -110,13 +57,12 @@ void load_obj(const char *path, float **data, size_t *out_vert_count)
         exit(EXIT_FAILURE);
     }
 
-    *data = calloc(attrib.num_faces, 8 * sizeof(float));
+    float *data = calloc(attrib.num_faces, 8 * sizeof(float));
     assert(data);
 
     *out_vert_count = attrib.num_faces;
 
-    size_t face_offset = 0;
-    float *tri = *data;
+    float *tri = data;
     for(size_t i = 0; i < attrib.num_faces; ++i) {
         tinyobj_vertex_index_t id = attrib.faces[i];
         tri[0] = attrib.vertices[3 * (size_t)id.v_idx + 0];
@@ -131,8 +77,9 @@ void load_obj(const char *path, float **data, size_t *out_vert_count)
         tri[7] = attrib.texcoords[2 * (size_t)id.vt_idx + 1];
 
         tri += 8;
-        //face_offset += (size_t)attrib.face_num_verts[i];
     }
+
+    return data;
 }
 
 void upload_model(struct Model *model)
@@ -150,8 +97,8 @@ void upload_model(struct Model *model)
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    //glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
-    //glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 }
 
 void print_model(struct Model *model)
@@ -202,6 +149,8 @@ void draw_scene(ShaderID shader)
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
     // ground plane
+    if(shader == shad_shader)
+        return;
     mat4 ground_model;
 
     glm_mat4_identity(ground_model);
@@ -221,14 +170,14 @@ void draw_fullscreen(void)
 
     mat4 quad_model;
     glm_mat4_identity(quad_model);
-    glm_scale(quad_model, (vec4){2, 2, 2, 2});
+    //glm_scale(quad_model, (vec4){2, 2, 2, 2});
 
     glUseProgram(shader);
-    glBindVertexArray(cube_info.vao);
+    glBindVertexArray(screen_quad.vao);
     int model_loc = glGetUniformLocation(shader, "model");
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &quad_model[0][0]);
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 int main(void)
@@ -245,13 +194,13 @@ int main(void)
     flat_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/flat.frag");
     shad_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
 
-    load_obj("res/meshes/cube.obj", &cube_info.data, &cube_info.vert_count);
-    assert(cube_info.data);
+    cube_info.data = load_obj("res/meshes/cube.obj", &cube_info.vert_count);
     upload_model(&cube_info);
-    print_model(&cube_info);
+    upload_model(&screen_quad);
+    //print_model(&cube_info);
     glm_mat4_identity(cube_info.model);
 
-    glClearColor(0.2f, 0.3f, 0.3f, 0.0f);
+    glClearColor(0.25f, 0.25f, 0.4f, 0.0f);
 
     while(!agl_window_should_quit()) {
         // *** update ***
@@ -261,7 +210,10 @@ int main(void)
 
         light_dir[0] = sinf((float)counter++ * 0.01f) * 0.8f;
         light_dir[1] = 1;
-        light_dir[2] = 1;
+        light_dir[2] = sinf((float)counter++ * 0.01f) * 0.8f;
+        //light_dir[0] = 0;
+        //light_dir[1] = 1;
+        //light_dir[2] = 0;
         glm_normalize(light_dir);
 
         // *** render ***
@@ -269,17 +221,14 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         //draw_fullscreen();
-        draw_scene(flat_shader);
-
-
-        /*
-        //glCullFace(GL_BACK);
+        //draw_scene(flat_shader);
         //draw_scene(shad_shader);
 
-        //draw_scene(shad_shader);
         // depth prepass
         glDrawBuffer(GL_NONE);
+        glDepthFunc(GL_LESS);
         draw_scene(flat_shader);
+        glDepthFunc(GL_LEQUAL);
 
         // shadow volumes
         glEnable(GL_STENCIL_TEST);
@@ -300,12 +249,14 @@ int main(void)
         glStencilFunc(GL_EQUAL, 0x0, 0xFF);
         glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
         //glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_KEEP);
-        //draw_scene(flat_shader);
-        draw_fullscreen();
+        draw_scene(flat_shader);
+        //draw_fullscreen();
 
         // shaded render
         glDisable(GL_STENCIL_TEST);
-        */
+        glStencilFunc(GL_NOTEQUAL, 0x0, 0xFF);
+
+        //draw_scene(flat_shader);
 
         agl_window_swap_buffers();
     }
