@@ -24,6 +24,7 @@ void agl_renderer_init(int width, int height)
     assert(rd);
 
     glEnable(GL_MULTISAMPLE);
+    glEnable(GL_FRAMEBUFFER_SRGB);
     glViewport(0, 0, width, height);
 }
 

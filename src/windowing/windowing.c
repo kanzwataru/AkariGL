@@ -38,6 +38,7 @@ void agl_window_init(const char *title, int width, int height)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
 
     window = SDL_CreateWindow(title,
                               SDL_WINDOWPOS_UNDEFINED,
