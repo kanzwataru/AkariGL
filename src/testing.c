@@ -4,8 +4,8 @@
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "tinyobj_loader_c.h"
 
-#define WIDTH  800
-#define HEIGHT 600
+#define WIDTH  1280
+#define HEIGHT 720
 
 struct Model {
     float *data;
@@ -156,7 +156,7 @@ void draw_scene(ShaderID shader)
     glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
 
     // ground plane
-    if(shader != shadvolume_shader) {
+    //if(shader != shadvolume_shader) {
         mat4 ground_model;
 
         glm_mat4_identity(ground_model);
@@ -168,19 +168,13 @@ void draw_scene(ShaderID shader)
         glUniform3f(color_loc, 0.9f, 0.7f, 0.8f);
 
         glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
-    }
+    //}
 
     // suzanne
-    mat4 suzanne_model;
-    glm_mat4_identity(suzanne_model);
-    glm_translate_x(suzanne_model, -1.5);
-    glm_translate_y(suzanne_model, -0.5);
-    glm_rotate_x(suzanne_model, glm_rad(-30), suzanne_model);
-    glm_scale(suzanne_model, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
-
     glBindVertexArray(suzanne_info.vao);
 
-    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &suzanne_model[0][0]);
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &suzanne_info.model[0][0]);
+    glUniform3f(color_loc, 0.9f, 0.2f, 0.1f);
     glDrawArrays(GL_TRIANGLES, 0, suzanne_info.vert_count);
 }
 
@@ -222,6 +216,13 @@ int main(void)
     upload_model(&suzanne_info);
     //print_model(&cube_info);
     glm_mat4_identity(cube_info.model);
+    glm_mat4_identity(suzanne_info.model);
+
+    glm_mat4_identity(suzanne_info.model);
+    glm_translate_x(suzanne_info.model, -1.8);
+    glm_translate_y(suzanne_info.model, -0.2);
+    glm_rotate_x(suzanne_info.model, glm_rad(-30), suzanne_info.model);
+    glm_scale(suzanne_info.model, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
 
     glClearColor(0.25f, 0.25f, 0.4f, 0.0f);
 
@@ -230,6 +231,8 @@ int main(void)
         glm_rotate_x(cube_info.model, glm_rad(1.0f), cube_info.model);
         glm_rotate_y(cube_info.model, glm_rad(0.5f), cube_info.model);
         glm_rotate_z(cube_info.model, glm_rad(0.2f), cube_info.model);
+
+        glm_rotate_y(suzanne_info.model, glm_rad(-0.2f), suzanne_info.model);
 
         light_dir[0] = sinf((float)counter++ * 0.01f) * 0.8f;
         light_dir[1] = 1;
@@ -241,6 +244,7 @@ int main(void)
 
         // *** render ***
         glDepthMask(GL_TRUE);
+        glStencilMask(0xFF);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 #define DRAW_SHADOWED
 #ifndef DRAW_SHADOWED
@@ -250,6 +254,7 @@ int main(void)
 
 #else
         // depth prepass
+        glEnable(GL_CULL_FACE);
         glDrawBuffer(GL_NONE);
         glDepthFunc(GL_LESS);
         draw_scene(flat_shader);
@@ -270,18 +275,18 @@ int main(void)
         glDisable(GL_DEPTH_CLAMP);
         glEnable(GL_CULL_FACE);
         glDrawBuffer(GL_BACK);
-        glDisable(GL_STENCIL_TEST);
+        //glDisable(GL_STENCIL_TEST);
 
         glStencilFunc(GL_NOTEQUAL, 0x0, 0xFF);
         glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
-        //glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_KEEP);
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_KEEP);
         draw_scene(flat_shader);
         //draw_fullscreen();
 
         // lit render
         glEnable(GL_STENCIL_TEST);
         glStencilFunc(GL_EQUAL, 0x0, 0xFF);
-
+        //glDepthFunc(GL_ALWAYS); draw_fullscreen();
         draw_scene(lit_shader);
         glDisable(GL_STENCIL_TEST);
 #endif
