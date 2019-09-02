@@ -262,7 +262,7 @@ int main(void)
         glDepthMask(GL_TRUE);
         glStencilMask(0xFF);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-#define DRAW_SHADOWED
+//#define DRAW_SHADOWED
 #ifndef DRAW_SHADOWED
         //draw_fullscreen();
         //draw_scene(flat_shader);
