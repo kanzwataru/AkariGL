@@ -9,6 +9,6 @@ uniform vec3 ambient;
 void main() {
     float lambert = clamp(dot(normalize(light_dir), normal), 0.0f, 1.0f);
 
-    out_color = vec4((color * lambert) + ambient, 1.0f);
+    out_color = vec4(mix(color, ambient, step(lambert, 0.3)), 0);
 }
 
