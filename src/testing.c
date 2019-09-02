@@ -136,12 +136,14 @@ void draw_scene(ShaderID shader)
     int light_dir_loc = glGetUniformLocation(shader, "light_dir");
     int color_loc = glGetUniformLocation(shader, "color");
     int ambient_loc = glGetUniformLocation(shader, "ambient");
+    int cel_split_loc = glGetUniformLocation(shader, "cel_split_point");
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, &cube_info.model[0][0]);
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, &proj[0][0]);
     glUniform3fv(light_dir_loc, 1, &light_dir[0]);
     glUniform3fv(ambient_loc, 1, &ambient_col[0]);
     glUniform3f(color_loc, 1.0f, 0.5f, 0.3f);
+    glUniform1f(cel_split_loc, 0.0f);
 
     glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
 
@@ -170,6 +172,8 @@ void draw_scene(ShaderID shader)
 
         glDrawArrays(GL_TRIANGLES, 0, cube_info.vert_count);
     //}
+
+    glUniform1f(cel_split_loc, 0.5f);
 
     // suzanne
     glBindVertexArray(suzanne_info.vao);
