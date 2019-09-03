@@ -227,6 +227,71 @@ void draw_postprocess(ShaderID shader, GLuint col_buffer, GLuint depth_buffer)
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+GLuint framebuffer_setup(GLuint *col_buffer, GLuint *depth_buffer)
+{
+    GLuint framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    glGenTextures(1, col_buffer);
+    glBindTexture(GL_TEXTURE_2D, *col_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *col_buffer, 0);
+
+    glGenTextures(1, depth_buffer);
+    glBindTexture(GL_TEXTURE_2D, *depth_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, *depth_buffer, 0);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        fprintf(stderr, "Regular Framebuffer is not complete\n");
+    }
+
+    return framebuffer;
+}
+
+GLuint framebuffer_multisample_setup(void)
+{
+    GLuint framebuffer, col_buffer, depth_buffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    glGenTextures(1, &col_buffer);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, col_buffer);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, WIDTH, HEIGHT, false);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_buffer, 0);
+
+    glGenTextures(1, &depth_buffer);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, depth_buffer);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT, false);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_buffer, 0);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        fprintf(stderr, "Multisample Framebuffer is not complete\n");
+    }
+
+    return framebuffer;
+}
+
+void resolve_framebuffer(GLuint src, GLuint dest)
+{
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, src);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dest);
+    glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+}
+
 int main(void)
 {
     agl_window_init("AkariGL Testing", WIDTH, HEIGHT);
@@ -259,42 +324,15 @@ int main(void)
     glm_scale(suzanne_info.model, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
 
     // set up framebuffer
-    GLuint framebuffer, col_buffer, depth_buffer, depthstencil_rbuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-    glGenTextures(1, &col_buffer);
-    glBindTexture(GL_TEXTURE_2D, col_buffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_buffer, 0);
-
-    glGenTextures(1, &depth_buffer);
-    glBindTexture(GL_TEXTURE_2D, depth_buffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_buffer, 0);
-
-    /*
-    glGenRenderbuffers(1, &depthstencil_rbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, depthstencil_rbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, WIDTH, HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthstencil_rbuffer);
-    */
+    GLuint multisample_target, resolved_target;
+    GLuint col_buffer, depth_buffer;
+    multisample_target = framebuffer_multisample_setup();
+    resolved_target = framebuffer_setup(&col_buffer, &depth_buffer);
 
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_CULL_FACE);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glClearColor(0.15f, 0.15f, 0.3f, 0.0f);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        fprintf(stderr, "Framebuffer is not complete\n");
-    }
 
     while(!agl_window_should_quit()) {
         // *** update ***
@@ -318,7 +356,7 @@ int main(void)
         glm_normalize(light_dir);
 
         // *** render ***
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, multisample_target);
         glDepthMask(GL_TRUE);
         glStencilMask(0xFF);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -369,6 +407,7 @@ int main(void)
         glDisable(GL_STENCIL_TEST);
 
         // postprocess
+        resolve_framebuffer(multisample_target, resolved_target);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);

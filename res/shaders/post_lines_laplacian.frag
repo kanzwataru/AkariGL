@@ -5,7 +5,7 @@ out vec4 out_color;
 uniform sampler2D col_buffer;
 uniform sampler2D depth_buffer;
 
-const float offset = 1.0 / 720.0;
+const float offset = 1.0 / 1280.0;
 
 float get_depth(vec2 coords)
 {
@@ -48,7 +48,7 @@ void main()
         laplacian += samples[i] * kernel[i];
     }
 
-    float line = step(pow(laplacian * 1, 1.0), 0.1f);
+    float line = step(pow(laplacian * 1, 2.0), 0.1f);
 
     vec4 scene_col = texture(col_buffer, tex_coord);
 
