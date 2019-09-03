@@ -16,12 +16,12 @@ struct Model {
 };
 
 static const float screen_quad_verts[] = {
-    -1, -1, 0,    0, 0, 1,    0, 1,
-     1, -1, 0,    0, 0, 1,    1, 1,
-    -1,  1, 0,    0, 0, 1,    0, 0,
-     1, -1, 0,    0, 0, 1,    1, 1,
-     1,  1, 0,    0, 0, 1,    1, 0,
-    -1,  1, 0,    0, 0, 1,    0, 0
+    -1, -1, 0,    0, 0, 1,    0, 0,
+     1, -1, 0,    0, 0, 1,    1, 0,
+    -1,  1, 0,    0, 0, 1,    0, 1,
+     1, -1, 0,    0, 0, 1,    1, 0,
+     1,  1, 0,    0, 0, 1,    1, 1,
+    -1,  1, 0,    0, 0, 1,    0, 1
 };
 
 static struct Model cube_info;
@@ -36,6 +36,7 @@ static ShaderID debug_shader;
 static ShaderID flat_shader;
 static ShaderID lit_shader;
 static ShaderID shadvolume_shader;
+static ShaderID post_direct_shader;
 static vec3 light_dir = {0,0,0};
 static vec3 ambient_col = {0.05f, 0.025f, 0.1f};
 static unsigned int counter;
@@ -206,20 +207,25 @@ void draw_fullscreen(void)
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void draw_postprocess(ShaderID shader, GLuint col_buffer)
+{
+    glUseProgram(shader);
+    glBindVertexArray(screen_quad.vao);
+    glBindTexture(GL_TEXTURE_2D, col_buffer);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
 int main(void)
 {
     agl_window_init("AkariGL Testing", WIDTH, HEIGHT);
     agl_renderer_init(WIDTH, HEIGHT);
-
-    glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_CULL_FACE);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     //quad_id = agl_upload_new_mesh(&quad_data);
     debug_shader = agl_load_compile_shader("res/shaders/debug.vert", NULL, "res/shaders/debug.frag");
     flat_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/flat.frag");
     lit_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/lit.frag");
     shadvolume_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
+    post_direct_shader = agl_load_compile_shader("res/shaders/post.vert", NULL, "res/shaders/post_direct.frag");
 
     cube_info.data = load_obj("res/meshes/cube.obj", &cube_info.vert_count);
     suzanne_info.data = load_obj("res/meshes/suzanne.obj", &suzanne_info.vert_count);
@@ -239,7 +245,33 @@ int main(void)
     glm_rotate_x(suzanne_info.model, glm_rad(-30), suzanne_info.model);
     glm_scale(suzanne_info.model, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
 
+    // set up framebuffer
+    GLuint framebuffer, col_buffer, depthstencil_rbuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    glGenTextures(1, &col_buffer);
+    glBindTexture(GL_TEXTURE_2D, col_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_buffer, 0);
+
+    glGenRenderbuffers(1, &depthstencil_rbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthstencil_rbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthstencil_rbuffer);
+
+    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_CULL_FACE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glClearColor(0.15f, 0.15f, 0.3f, 0.0f);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        fprintf(stderr, "Framebuffer is not complete\n");
+    }
 
     while(!agl_window_should_quit()) {
         // *** update ***
@@ -263,6 +295,7 @@ int main(void)
         glm_normalize(light_dir);
 
         // *** render ***
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glDepthMask(GL_TRUE);
         glStencilMask(0xFF);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -273,9 +306,11 @@ int main(void)
         draw_scene(shadvolume_shader);
 
 #else
+
         // depth prepass
         glEnable(GL_CULL_FACE);
-        glDrawBuffer(GL_NONE);
+        glEnable(GL_DEPTH_TEST);
+        glColorMask(0, 0, 0, 0);
         glDepthFunc(GL_LESS);
         draw_scene(flat_shader);
         glDepthFunc(GL_LEQUAL);
@@ -294,7 +329,7 @@ int main(void)
         // shaded render
         glDisable(GL_DEPTH_CLAMP);
         glEnable(GL_CULL_FACE);
-        glDrawBuffer(GL_BACK);
+        glColorMask(1, 1, 1, 1);
         //glDisable(GL_STENCIL_TEST);
 
         glStencilFunc(GL_NOTEQUAL, 0x0, 0xFF);
@@ -309,6 +344,12 @@ int main(void)
         //glDepthFunc(GL_ALWAYS); draw_fullscreen();
         draw_scene(lit_shader);
         glDisable(GL_STENCIL_TEST);
+
+        // postprocess
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        draw_postprocess(post_direct_shader, col_buffer);
 #endif
         agl_window_swap_buffers();
     }
