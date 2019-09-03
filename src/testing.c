@@ -37,6 +37,7 @@ static ShaderID flat_shader;
 static ShaderID lit_shader;
 static ShaderID shadvolume_shader;
 static ShaderID post_direct_shader;
+static ShaderID post_lines_laplacian_shader;
 static vec3 light_dir = {0,0,0};
 static vec3 ambient_col = {0.05f, 0.025f, 0.1f};
 static unsigned int counter;
@@ -121,11 +122,12 @@ void print_model(struct Model *model)
 void draw_scene(ShaderID shader)
 {
     mat4 proj;
-    glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f, proj);
+    glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 10.0f, proj);
 
     mat4 view;
     glm_mat4_identity(view);
     glm_translate(view, (vec3){0.0f, 0.0f, -4.0f});
+    //glm_scale(view, (vec4){100.0f, 100.0f, 100.0f, 1.0f});
 
     // spinning cube
     glUseProgram(shader);
@@ -236,6 +238,7 @@ int main(void)
     lit_shader = agl_load_compile_shader("res/shaders/flat.vert", NULL, "res/shaders/lit.frag");
     shadvolume_shader = agl_load_compile_shader("res/shaders/shadow.vert", "res/shaders/shadow.glsl", "res/shaders/shadow.frag");
     post_direct_shader = agl_load_compile_shader("res/shaders/post.vert", NULL, "res/shaders/post_direct.frag");
+    post_lines_laplacian_shader = agl_load_compile_shader("res/shaders/post.vert", NULL, "res/shaders/post_lines_laplacian.frag");
 
     cube_info.data = load_obj("res/meshes/cube.obj", &cube_info.vert_count);
     suzanne_info.data = load_obj("res/meshes/suzanne.obj", &suzanne_info.vert_count);
@@ -369,7 +372,7 @@ int main(void)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
-        draw_postprocess(post_direct_shader, col_buffer, depth_buffer);
+        draw_postprocess(post_lines_laplacian_shader, col_buffer, depth_buffer);
 #endif
         agl_window_swap_buffers();
     }
